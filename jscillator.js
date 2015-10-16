@@ -6,40 +6,41 @@ function start() {
 
 	var audio = new AudioContext();
 
-	var volume = 0;
+	var volume = 1;
 	var pan = 0;
-	var attack = 0.01;
+	var attack = 0.1;
 	var decay = 0;
 	var sustain = 1;
-	var release = 0.30;
-	var envelope = false;
+	var release = 0.3;
+	var envelope = true;
+	var slide = 1;
+	var gate = 1;
 
-	var master_compressor = audio.createDynamicsCompressor();
-	master_compressor.threshold.value = -10;
-	master_compressor.knee.value = 0;
-	master_compressor.ratio.value = 20;
-	master_compressor.reduction.value = 0;
-	master_compressor.attack.value = 0;
-	master_compressor.release.value = 0.1;
-	// master_compressor.connect(audio.destination);
+	var master_limiter = audio.createDynamicsCompressor();
+	master_limiter.threshold.value = -10;
+	master_limiter.knee.value = 0;
+	master_limiter.ratio.value = 20;
+	master_limiter.reduction.value = 0;
+	master_limiter.attack.value = 0;
+	master_limiter.release.value = 0.1;
+	// master_limiter.connect(audio.destination);
 
 	var master = audio.createGain();
 	master.gain.value = 0.5;
-	master_compressor.connect(master);
+	master_limiter.connect(master);
 	master.connect(audio.destination);
-	
 
 	function Note(frequency) {
 		var carrier = audio.createOscillator();
 		carrier.frequency.value = frequency;
-		carrier.type = "sine";
+		carrier.type = "triangle";
 		carrier.start();
 
 		var carrier_volume = audio.createGain();
-		carrier_volume.gain.value = volume;
+		carrier_volume.gain.value = 0;
 
 		carrier.connect(carrier_volume);
-		carrier_volume.connect(master_compressor);
+		carrier_volume.connect(master_limiter);
 
 		this.playing = false;
 		this.interval = 0;
@@ -47,7 +48,7 @@ function start() {
 		this.play = function() {
 			carrier_volume.gain.cancelScheduledValues(audio.currentTime);
 			carrier_volume.gain.setValueAtTime(carrier_volume.gain.value, audio.currentTime);
-			carrier_volume.gain.linearRampToValueAtTime(1, audio.currentTime + attack);
+			carrier_volume.gain.linearRampToValueAtTime(volume, audio.currentTime + attack);
 
 			this.interval = setTimeout(function() {
 				carrier_volume.gain.cancelScheduledValues(audio.currentTime);
